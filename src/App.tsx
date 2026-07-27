@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 const Home = lazy(() => import("../pages/Home"));
+const TicketForm = lazy(() => import("../pages/TicketForm"));
 
 function Loading() {
   return (
@@ -24,7 +25,23 @@ export default function App() {
               <Home />
             </Suspense>
           }
-        ></Route>
+        />
+        <Route
+          path="/ticket/new"
+          element={
+            <Suspense fallback={<Loading />}>
+              <TicketForm />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/ticket/:ticketId/edit"
+          element={
+            <Suspense fallback={<Loading />}>
+              <TicketForm />
+            </Suspense>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

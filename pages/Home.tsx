@@ -1,120 +1,148 @@
-import {
-  Button,
-  ButtonGroup, Kbd,
-  Navbar,
-  NavbarBrand,
-  NavbarCollapse,
-  NavbarLink,
-  NavbarToggle, Pagination,
-  Sidebar,
-  SidebarItem,
-  SidebarItemGroup,
-  SidebarItems,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeadCell,
-  TableRow,
-  TextInput,
-} from "flowbite-react";
-import { HiOutlineSearch, HiPlus } from "react-icons/hi";
-import {useState} from "react";
+import { Alert, Pagination } from "flowbite-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AdminNavbar } from "../components/layout/AdminNavbar";
+import { AdminSidebar } from "../components/layout/AdminSidebar";
+import { TicketTable } from "../components/ticket/TicketTable";
+import { TicketToolbar } from "../components/ticket/TicketToolbar";
+import { deleteTicket, getTickets } from "../src/api/ticketApi";
+import type { Genre, SaleStatus, Ticket } from "../src/api/types";
+
+const PAGE_SIZE = 10;
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const [genre, setGenre] = useState<Genre>("CONCERT");
+  const [saleStatus, setSaleStatus] = useState<SaleStatus>("before-sale");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const requestIdRef = useRef(0);
 
-  const onPageChange = (page: number) => setCurrentPage(page);
+  const loadTickets = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    setLoading(true);
+    setError(null);
+    setTickets([]);
+
+    try {
+      const response = await getTickets(
+        saleStatus,
+        genre,
+        currentPage - 1,
+        PAGE_SIZE,
+        appliedSearch || undefined,
+      );
+
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      setTickets(response.content);
+      setTotalPages(Math.max(response.totalPages, 1));
+    } catch (err) {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      setTickets([]);
+      setTotalPages(1);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "티켓 목록을 불러오는데 실패했습니다.",
+      );
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [saleStatus, genre, currentPage, appliedSearch]);
+
+  useEffect(() => {
+    loadTickets();
+  }, [loadTickets]);
+
+  const handleGenreChange = (newGenre: Genre) => {
+    setTickets([]);
+    setGenre(newGenre);
+    setCurrentPage(1);
+  };
+
+  const handleSaleStatusChange = (status: SaleStatus) => {
+    setTickets([]);
+    setSaleStatus(status);
+    setCurrentPage(1);
+  };
+
+  const handleSearch = () => {
+    setTickets([]);
+    setAppliedSearch(searchQuery);
+    setCurrentPage(1);
+  };
+
+  const handleDelete = async (ticketId: number) => {
+    if (!window.confirm("정말 삭제하시겠습니까?")) {
+      return;
+    }
+
+    setDeletingId(ticketId);
+    try {
+      await deleteTicket(ticketId);
+      await loadTickets();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "티켓 삭제에 실패했습니다.",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen">
-      <Navbar fluid className="bg-gray-50">
-        <NavbarBrand href="/">
-          <span className="self-center text-xl font-semibold whitespace-nowrap text-gray-900">
-            Newket Admin
-          </span>
-        </NavbarBrand>
-        <NavbarToggle />
-        <NavbarCollapse>
-          <NavbarLink href="#" active>
-            Ticket DB
-          </NavbarLink>
-          <NavbarLink href="#">Artist DB</NavbarLink>
-          <NavbarLink href="#">Place DB</NavbarLink>
-        </NavbarCollapse>
-      </Navbar>
+      <AdminNavbar />
 
       <div className="flex">
-        <Sidebar className="h-[calc(100vh-65px)]">
-          <SidebarItems>
-            <SidebarItemGroup>
-              <SidebarItem href="#">콘서트/팬미팅</SidebarItem>
-              <SidebarItem href="#">페스티벌</SidebarItem>
-              <SidebarItem href="#">뮤지컬</SidebarItem>
-            </SidebarItemGroup>
-          </SidebarItems>
-        </Sidebar>
+        <AdminSidebar selectedGenre={genre} onGenreChange={handleGenreChange} />
 
         <main className="flex-1 p-8">
           <div className="space-y-6">
-            <ButtonGroup>
-              <Button color="alternative">오픈 예정 티켓</Button>
-              <Button color="alternative">예매 중인 티켓</Button>
-              <Button color="alternative">예매 완료 티켓</Button>
-            </ButtonGroup>
-
-            <TextInput
-              id="email4"
-              icon={HiOutlineSearch}
-              placeholder="공연명을 입력하세요"
-              required
+            <TicketToolbar
+              saleStatus={saleStatus}
+              searchQuery={searchQuery}
+              onSaleStatusChange={handleSaleStatusChange}
+              onSearchChange={setSearchQuery}
+              onSearch={handleSearch}
+              onAddTicket={() => navigate(`/ticket/new?genre=${genre}`)}
             />
 
-            <Button>
-              <HiPlus className="mr-2 h-5 w-5" />
-              티켓추가
-            </Button>
+            {error && (
+              <Alert color="failure" onDismiss={() => setError(null)}>
+                {error}
+              </Alert>
+            )}
 
-            <div className="overflow-x-auto">
-              <Table hoverable>
-                <TableHead>
-                  <TableHeadCell>id</TableHeadCell>
-                  <TableHeadCell>공연명</TableHeadCell>
-                  <TableHeadCell>오픈일시</TableHeadCell>
-                  <TableHeadCell>아티스트</TableHeadCell>
-                  <TableHeadCell>공연 일시</TableHeadCell>
-                  <TableHeadCell>공연 장소</TableHeadCell>
-                  <TableHeadCell>티켓 가격</TableHeadCell>
-                  <TableHeadCell>삭제</TableHeadCell>
-                  <TableHeadCell>
-                    <span className="sr-only">Edit</span>
-                  </TableHeadCell>
-                </TableHead>
-                <TableBody className="divide-y">
-                  <TableRow className="bg-white dark:border-gray-700 dark:bg-gray-800">
-                    <TableCell className="font-medium whitespace-nowrap text-gray-900 dark:text-white">
-                      1
-                    </TableCell>
-                    <TableCell>QWER 2nd TOUR ROCKATION : ROCKET LAUNCH!!</TableCell>
-                    <TableCell><Kbd>선예매: 2026.08.12 (수) 20:00 (MELON)</Kbd><Kbd>일반예매: 2026.08.13 (목) 20:00 (MELON)</Kbd></TableCell>
-                    <TableCell><Kbd>QWER</Kbd></TableCell>
-                    <TableCell><Kbd>2026.09.12(토) 17:00:00</Kbd><Kbd>2026.09.13(일) 16:00:00</Kbd></TableCell>
-                    <TableCell>고려대학교 화정체육관</TableCell>
-                    <TableCell><Kbd>전석:154,000원</Kbd></TableCell>
-                    <TableCell>
-                      <a
-                        href="#"
-                        className="text-primary-600 dark:text-primary-500 font-medium hover:underline"
-                      >
-                        Edit
-                      </a>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
+            <TicketTable
+              key={`${saleStatus}-${genre}-${currentPage}-${appliedSearch}`}
+              tickets={tickets}
+              loading={loading}
+              onDelete={handleDelete}
+              deletingId={deletingId}
+            />
+
             <div className="flex overflow-x-auto sm:justify-center">
-              <Pagination currentPage={currentPage} totalPages={100} onPageChange={onPageChange} showIcons />
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                showIcons
+              />
             </div>
           </div>
         </main>
