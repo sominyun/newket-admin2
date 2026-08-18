@@ -16,11 +16,15 @@ export function AdminNavbar() {
       </NavbarBrand>
       <NavbarToggle />
       <NavbarCollapse>
-        <NavbarLink href="/" active>
+        <NavbarLink href="/" active={location.pathname === "/"}>
           Ticket DB
         </NavbarLink>
-        <NavbarLink href="#">Artist DB</NavbarLink>
-        <NavbarLink href="#">Place DB</NavbarLink>
+        <NavbarLink href="/artist" active={location.pathname === "/artist"}>
+          Artist DB
+        </NavbarLink>
+        <NavbarLink href="/place" active={location.pathname === "/place"}>
+          Place DB
+        </NavbarLink>
       </NavbarCollapse>
     </Navbar>
   );
