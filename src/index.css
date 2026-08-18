@@ -3,3 +3,7 @@
 @source "../.flowbite-react/class-list.json";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+.ag-header-cell-center .ag-header-cell-label {
+  justify-content: center;
+}
