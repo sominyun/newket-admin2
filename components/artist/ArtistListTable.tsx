@@ -61,6 +61,8 @@ export function ArtistListTable() {
       {
         field: "imageUrl",
         headerName: "이미지 URL",
+        minWidth: 520,
+        flex: 0,
         cellRenderer: createPlaceholderRenderer("이미지 URL"),
       },
     ],
