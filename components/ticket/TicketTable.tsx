@@ -1,24 +1,20 @@
-import {
-  Button,
-  Spinner,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeadCell,
-  TableRow,
-} from "flowbite-react";
+import { Spinner } from "flowbite-react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import type { ColDef } from "ag-grid-community";
+
 import type { Ticket } from "../../src/api/types";
-import { KbdList } from "../common/KbdGroup";
 import {
   formatPrices,
   formatSaleSchedules,
 } from "../../src/utils/ticketFormatters";
+import { KbdList } from "../common/KbdGroup";
+import { ReadOnlyGridTable } from "../common/ReadOnlyGridTable";
 
 interface TicketTableProps {
   tickets: Ticket[];
   loading: boolean;
+  searchQuery: string;
   onDelete: (ticketId: number) => void;
   deletingId: number | null;
 }
@@ -26,10 +22,70 @@ interface TicketTableProps {
 export function TicketTable({
   tickets,
   loading,
+  searchQuery,
   onDelete,
   deletingId,
 }: TicketTableProps) {
   const navigate = useNavigate();
+
+  const columns = useMemo<ColDef<Ticket>[]>(
+    () => [
+      {
+        field: "ticketId",
+        headerName: "ID",
+        maxWidth: 80,
+      },
+      {
+        field: "title",
+        headerName: "공연명",
+        minWidth: 180,
+      },
+      {
+        headerName: "오픈일시",
+        minWidth: 300,
+        autoHeight: true,
+        wrapText: true,
+        cellRenderer: (params: { data?: Ticket }) =>
+          params.data ? (
+            <KbdList
+              items={formatSaleSchedules(params.data.ticketSaleSchedules)}
+            />
+          ) : null,
+      },
+      {
+        headerName: "아티스트",
+        minWidth: 100,
+        autoHeight: true,
+        wrapText: true,
+        cellRenderer: (params: { data?: Ticket }) =>
+          params.data ? <KbdList items={params.data.artists} /> : null,
+      },
+      {
+        headerName: "공연 일시",
+        minWidth: 180,
+        autoHeight: true,
+        wrapText: true,
+        cellRenderer: (params: { data?: Ticket }) =>
+          params.data ? <KbdList items={params.data.dateList} /> : null,
+      },
+      {
+        field: "place",
+        headerName: "공연 장소",
+        valueFormatter: (params) => params.value ?? "-",
+      },
+      {
+        headerName: "티켓 가격",
+        minWidth: 180,
+        autoHeight: true,
+        wrapText: true,
+        cellRenderer: (params: { data?: Ticket }) =>
+          params.data ? (
+            <KbdList items={formatPrices(params.data.prices)} />
+          ) : null,
+      },
+    ],
+    [],
+  );
 
   if (loading) {
     return (
@@ -48,63 +104,18 @@ export function TicketTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table hoverable>
-        <TableHead>
-          <TableRow>
-            <TableHeadCell>id</TableHeadCell>
-            <TableHeadCell>공연명</TableHeadCell>
-            <TableHeadCell>오픈일시</TableHeadCell>
-            <TableHeadCell>아티스트</TableHeadCell>
-            <TableHeadCell>공연 일시</TableHeadCell>
-            <TableHeadCell>공연 장소</TableHeadCell>
-            <TableHeadCell>티켓 가격</TableHeadCell>
-            <TableHeadCell>삭제</TableHeadCell>
-          </TableRow>
-        </TableHead>
-        <TableBody className="divide-y">
-          {tickets.map((ticket) => (
-            <TableRow
-              key={ticket.ticketId}
-              className="cursor-pointer bg-white dark:border-gray-700 dark:bg-gray-800"
-              onClick={() => navigate(`/ticket/${ticket.ticketId}/edit`)}
-            >
-              <TableCell className="font-medium whitespace-nowrap text-gray-900 dark:text-white">
-                {ticket.ticketId}
-              </TableCell>
-              <TableCell>{ticket.title}</TableCell>
-              <TableCell>
-                <KbdList
-                  items={formatSaleSchedules(ticket.ticketSaleSchedules)}
-                />
-              </TableCell>
-              <TableCell>
-                <KbdList items={ticket.artists} />
-              </TableCell>
-              <TableCell>
-                <KbdList items={ticket.dateList} />
-              </TableCell>
-              <TableCell>{ticket.place ?? "-"}</TableCell>
-              <TableCell>
-                <KbdList items={formatPrices(ticket.prices)} />
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="xs"
-                  color="failure"
-                  disabled={deletingId === ticket.ticketId}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(ticket.ticketId);
-                  }}
-                >
-                  {deletingId === ticket.ticketId ? "삭제 중..." : "삭제"}
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ReadOnlyGridTable<Ticket>
+      rowData={tickets}
+      columns={columns}
+      searchText={searchQuery}
+      getRowId={(ticket) => ticket.ticketId}
+      deletingId={deletingId}
+      onRowClick={(ticket) => {
+        navigate(`/ticket/${ticket.ticketId}/edit`);
+      }}
+      onDelete={(ticket) => {
+        onDelete(ticket.ticketId);
+      }}
+    />
   );
 }

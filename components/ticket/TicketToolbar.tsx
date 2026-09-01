@@ -7,19 +7,17 @@ const SALE_STATUSES: SaleStatus[] = ["before-sale", "on-sale", "after-sale"];
 
 interface TicketToolbarProps {
   saleStatus: SaleStatus;
-  searchQuery: string;
   onSaleStatusChange: (status: SaleStatus) => void;
+  searchQuery: string;
   onSearchChange: (query: string) => void;
-  onSearch: () => void;
   onAddTicket: () => void;
 }
 
 export function TicketToolbar({
   saleStatus,
-  searchQuery,
   onSaleStatusChange,
+  searchQuery,
   onSearchChange,
-  onSearch,
   onAddTicket,
 }: TicketToolbarProps) {
   return (
@@ -42,11 +40,6 @@ export function TicketToolbar({
         placeholder="공연명을 입력하세요"
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            onSearch();
-          }
-        }}
       />
 
       <Button onClick={onAddTicket} className="shrink-0">
