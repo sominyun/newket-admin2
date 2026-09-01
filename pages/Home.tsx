@@ -1,4 +1,4 @@
-import { Alert, Pagination } from "flowbite-react";
+import { Alert } from "flowbite-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminNavbar } from "../components/layout/AdminNavbar";
@@ -8,17 +8,12 @@ import { TicketToolbar } from "../components/ticket/TicketToolbar";
 import { deleteTicket, getTickets } from "../src/api/ticketApi";
 import type { Genre, SaleStatus, Ticket } from "../src/api/types";
 
-const PAGE_SIZE = 10;
-
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const [genre, setGenre] = useState<Genre>("CONCERT");
   const [saleStatus, setSaleStatus] = useState<SaleStatus>("before-sale");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -31,27 +26,19 @@ const Home: React.FC = () => {
     setTickets([]);
 
     try {
-      const response = await getTickets(
-        saleStatus,
-        genre,
-        currentPage - 1,
-        PAGE_SIZE,
-        appliedSearch || undefined,
-      );
+      const response = await getTickets(saleStatus, genre);
 
       if (requestId !== requestIdRef.current) {
         return;
       }
 
-      setTickets(response.content);
-      setTotalPages(Math.max(response.totalPages, 1));
+      setTickets(response);
     } catch (err) {
       if (requestId !== requestIdRef.current) {
         return;
       }
 
       setTickets([]);
-      setTotalPages(1);
       setError(
         err instanceof Error
           ? err.message
@@ -62,7 +49,7 @@ const Home: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [saleStatus, genre, currentPage, appliedSearch]);
+  }, [saleStatus, genre]);
 
   useEffect(() => {
     loadTickets();
@@ -71,19 +58,11 @@ const Home: React.FC = () => {
   const handleGenreChange = (newGenre: Genre) => {
     setTickets([]);
     setGenre(newGenre);
-    setCurrentPage(1);
   };
 
   const handleSaleStatusChange = (status: SaleStatus) => {
     setTickets([]);
     setSaleStatus(status);
-    setCurrentPage(1);
-  };
-
-  const handleSearch = () => {
-    setTickets([]);
-    setAppliedSearch(searchQuery);
-    setCurrentPage(1);
   };
 
   const handleDelete = async (ticketId: number) => {
@@ -115,10 +94,9 @@ const Home: React.FC = () => {
           <div className="space-y-6">
             <TicketToolbar
               saleStatus={saleStatus}
-              searchQuery={searchQuery}
               onSaleStatusChange={handleSaleStatusChange}
+              searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              onSearch={handleSearch}
               onAddTicket={() => navigate(`/ticket/new?genre=${genre}`)}
             />
 
@@ -129,21 +107,13 @@ const Home: React.FC = () => {
             )}
 
             <TicketTable
-              key={`${saleStatus}-${genre}-${currentPage}-${appliedSearch}`}
+              key={`${saleStatus}-${genre}`}
               tickets={tickets}
               loading={loading}
+              searchQuery={searchQuery}
               onDelete={handleDelete}
               deletingId={deletingId}
             />
-
-            <div className="flex overflow-x-auto sm:justify-center">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                showIcons
-              />
-            </div>
           </div>
         </main>
       </div>

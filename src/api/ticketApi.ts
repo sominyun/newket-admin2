@@ -4,24 +4,13 @@ import type {
   CreateMusicalRequest,
   CreateTicketRequest,
   Genre,
-  PageResponse,
   PlaceTableDto,
   SaleStatus,
   Ticket,
 } from "./types";
 
-export function getTickets(
-  saleStatus: SaleStatus,
-  genre: Genre,
-  page: number,
-  size = 10,
-  title?: string,
-) {
-  return apiGet<PageResponse<Ticket>>(`/ticket/${saleStatus}/${genre}`, {
-    page,
-    size,
-    title,
-  });
+export function getTickets(saleStatus: SaleStatus, genre: Genre) {
+  return apiGet<Ticket[]>(`/ticket/${saleStatus}/${genre}`);
 }
 
 export function getTicket(ticketId: number) {
