@@ -59,7 +59,7 @@ export function EditableGridTable<T>({
         colId: "delete",
         headerName: "삭제",
         editable: false,
-        width: 80,
+        maxWidth: 80,
         flex: 0,
         headerClass: "ag-header-cell-center",
         cellStyle: {
@@ -71,6 +71,7 @@ export function EditableGridTable<T>({
           <div className="flex h-full w-full items-center justify-center">
             <Button
               size="xs"
+              color="red"
               onClick={() => {
                 if (params.data) {
                   gridRef.current?.api.stopEditing();
@@ -171,9 +172,6 @@ export function EditableGridTable<T>({
           stopEditingWhenCellsLoseFocus={false}
           rowHeight={45}
           quickFilterText={searchText}
-          onGridReady={(params) => {
-            params.api.sizeColumnsToFit();
-          }}
         />
       </div>
     </div>
