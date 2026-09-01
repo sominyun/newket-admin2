@@ -742,23 +742,23 @@ const TicketForm: React.FC = () => {
           {!isEdit && (
             <section className="space-y-4 rounded-lg bg-white p-6 shadow">
               <h2 className="text-lg font-semibold">예매처 크롤링</h2>
-              <div>
-                <TextInput
+              <div className="flex flex-wrap gap-3">
+                <TextInput className="flex-1"
                   id="crawlUrl"
                   value={crawlUrl}
                   onChange={(e) => setCrawlUrl(e.target.value)}
                   placeholder="티켓 예매처 붙여넣기"
                   autoComplete="off"
                 />
+                <Button
+                    type="button"
+                    color="blue"
+                    onClick={handleCrawl}
+                    disabled={crawling || !crawlUrl.trim()}
+                >
+                  {crawling ? "크롤링 중..." : "예매처 크롤링하기"}
+                </Button>
               </div>
-              <Button
-                type="button"
-                color="blue"
-                onClick={handleCrawl}
-                disabled={crawling || !crawlUrl.trim()}
-              >
-                {crawling ? "크롤링 중..." : "예매처 크롤링하기"}
-              </Button>
             </section>
           )}
 
