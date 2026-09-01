@@ -1,4 +1,3 @@
-import { Kbd } from "flowbite-react";
 import type { ReactNode } from "react";
 
 interface KbdGroupProps {
@@ -19,10 +18,15 @@ export function KbdList({ items }: KbdListProps) {
   }
 
   return (
-    <KbdGroup>
+    <div className="flex flex-wrap gap-1">
       {items.map((item, index) => (
-        <Kbd key={`${item}-${index}`}>{item}</Kbd>
+        <span
+          key={`${item}-${index}`}
+          className="inline-flex items-center rounded border border-gray-300 bg-white px-1 py-1 text-[12px] leading-none font-normal text-gray-700"
+        >
+          {item}
+        </span>
       ))}
-    </KbdGroup>
+    </div>
   );
 }
