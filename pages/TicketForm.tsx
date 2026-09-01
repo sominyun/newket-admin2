@@ -236,7 +236,6 @@ function PlaceSearchField({
       setSearchError(
         err instanceof Error ? err.message : "장소 검색에 실패했습니다.",
       );
-    } finally {
     }
   }, []);
 
@@ -367,7 +366,6 @@ function ArtistSearchField({
         setSearchError(
           err instanceof Error ? err.message : "아티스트 검색에 실패했습니다.",
         );
-      } finally {
       }
     };
 
@@ -750,6 +748,7 @@ const TicketForm: React.FC = () => {
                   value={crawlUrl}
                   onChange={(e) => setCrawlUrl(e.target.value)}
                   placeholder="티켓 예매처 붙여넣기"
+                  autoComplete="off"
                 />
               </div>
               <Button

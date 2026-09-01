@@ -1,6 +1,8 @@
 import { Spinner } from "flowbite-react";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Artist from "../pages/Artist.tsx";
+import Place from "../pages/Place.tsx";
 
 const Home = lazy(() => import("../pages/Home"));
 const TicketForm = lazy(() => import("../pages/TicketForm"));
@@ -39,6 +41,22 @@ export default function App() {
           element={
             <Suspense fallback={<Loading />}>
               <TicketForm />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/artist"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Artist />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/place"
+          element={
+            <Suspense fallback={<Loading />}>
+              <Place />
             </Suspense>
           }
         />

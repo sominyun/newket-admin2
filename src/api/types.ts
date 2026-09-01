@@ -83,6 +83,37 @@ export interface PlaceTableDto {
   url: string;
 }
 
+export interface GroupTableDto {
+  id: number;
+  groupId: number;
+  memberId: number;
+}
+
+export interface ArtistTableDto {
+  artistId: number;
+  name: string;
+  subName: string | null;
+  nickname: string | null;
+  imageUrl: string | null;
+}
+
+export type EditableArtistRow = Omit<ArtistTableDto, "artistId"> & {
+  artistId: number | null;
+};
+
+export type EditableGroupRow = Omit<
+  GroupTableDto,
+  "id" | "groupId" | "memberId"
+> & {
+  id: number | null;
+  groupId: number | null;
+  memberId: number | null;
+};
+
+export type EditablePlaceRow = Omit<PlaceTableDto, "id"> & {
+  id: number | null;
+};
+
 export interface PageResponse<T> {
   content: T[];
   totalPages: number;
