@@ -841,10 +841,25 @@ const TicketForm: React.FC = () => {
                 <ArrayFieldHeader
                   label="예매 정보"
                   onAdd={() =>
-                    setForm((prev) => ({
-                      ...prev,
-                      ticketSaleUrls: [...prev.ticketSaleUrls, emptySaleUrl()],
-                    }))
+                      setForm((prev) => {
+                        const first = prev.ticketSaleUrls[0];
+                        const schedules = first
+                            ? first.ticketSaleSchedules.map((s) => ({ ...s }))
+                            : [emptySaleSchedule()];
+
+                        return {
+                          ...prev,
+                          ticketSaleUrls: [
+                            ...prev.ticketSaleUrls,
+                            {
+                              ticketProvider: "",
+                              url: "",
+                              isDirectUrl: false,
+                              ticketSaleSchedules: schedules,
+                            },
+                          ],
+                        };
+                      })
                   }
                 />
 
