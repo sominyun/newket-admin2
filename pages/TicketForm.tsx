@@ -17,7 +17,7 @@ import { AdminNavbar } from "../components/layout/AdminNavbar";
 import {
   createMusicalTicket,
   createTicket,
-  fetchTicketFromUrl,
+  fetchTicketFromUrl, getMusicalTicket,
   getTicket,
   searchArtists,
   searchPlaces,
@@ -512,10 +512,26 @@ const TicketForm: React.FC = () => {
     setError(null);
 
     try {
-      const ticket = await getTicket(Number(ticketId));
+      let ticket = await getTicket(Number(ticketId));
+
+      if (ticket.genre === "MUSICAL") {
+        ticket = await getMusicalTicket(Number(ticketId));
+      }
+
       setForm({
         genre: ticket.genre,
-        artists: ticket.artists,
+        artists: ticket.artists.map((artist) =>
+            ticket.genre === "MUSICAL"
+                ? {
+                  artistId: artist.artistId,
+                  name: artist.name,
+                  role: artist.role ?? "",
+                }
+                : {
+                  artistId: artist.artistId,
+                  name: artist.name,
+                },
+        ),
         place: ticket.place ?? "",
         title: ticket.title,
         imageUrl: ticket.imageUrl,
@@ -723,11 +739,7 @@ const TicketForm: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <AdminNavbar />
 
-      <main className="mx-auto max-w-4xl p-8">
-        <h1 className="mb-6 text-2xl font-bold text-gray-900">
-          {isEdit ? "티켓 수정" : "티켓 추가"}
-        </h1>
-
+      <main className="mx-auto max-w-6xl p-8">
         {error && (
           <Alert
             color="failure"
@@ -738,12 +750,13 @@ const TicketForm: React.FC = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {!isEdit && (
             <section className="space-y-4 rounded-lg bg-white p-6 shadow">
               <h2 className="text-lg font-semibold">예매처 크롤링</h2>
               <div className="flex flex-wrap gap-3">
-                <TextInput className="flex-1"
+                <TextInput
+                  className="flex-1"
                   id="crawlUrl"
                   value={crawlUrl}
                   onChange={(e) => setCrawlUrl(e.target.value)}
@@ -751,10 +764,10 @@ const TicketForm: React.FC = () => {
                   autoComplete="off"
                 />
                 <Button
-                    type="button"
-                    color="blue"
-                    onClick={handleCrawl}
-                    disabled={crawling || !crawlUrl.trim()}
+                  type="button"
+                  color="blue"
+                  onClick={handleCrawl}
+                  disabled={crawling || !crawlUrl.trim()}
                 >
                   {crawling ? "크롤링 중..." : "예매처 크롤링하기"}
                 </Button>
@@ -762,381 +775,399 @@ const TicketForm: React.FC = () => {
             </section>
           )}
 
-          <section className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <h2 className="text-lg font-semibold">기본 정보</h2>
-
-            <div>
-              <Label htmlFor="genre">장르</Label>
-              <Select
-                id="genre"
-                value={form.genre}
-                disabled={isEdit}
-                onChange={(e) => {
-                  const newGenre = e.target.value as Genre;
-                  setForm({
-                    ...emptyForm(newGenre, !isEdit),
-                    genre: newGenre,
-                  });
-                }}
-              >
-                {Object.entries(GENRE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="title">공연명</Label>
-              <TextInput
-                id="title"
-                value={form.title}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, title: e.target.value }))
-                }
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="imageUrl">티켓 이미지 URL</Label>
-              <TextInput
-                id="imageUrl"
-                value={form.imageUrl}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, imageUrl: e.target.value }))
-                }
-                required
-              />
-            </div>
-
-            <PlaceSearchField
-              value={form.place}
-              suggestedQuery={suggestedPlaceQuery}
-              onSelect={(placeName) =>
-                setForm((prev) => ({
-                  ...prev,
-                  place: placeName || null,
-                }))
-              }
-            />
-          </section>
-
-          <section className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <ArrayFieldHeader
-              label="예매 정보"
-              onAdd={() =>
-                setForm((prev) => ({
-                  ...prev,
-                  ticketSaleUrls: [...prev.ticketSaleUrls, emptySaleUrl()],
-                }))
-              }
-            />
-
-            {form.ticketSaleUrls.map((saleUrl, urlIndex) => (
-              <div key={urlIndex} className="space-y-3 rounded p-4">
-                <div className="flex flex-wrap gap-3">
-                  <div className="min-w-[140px] flex-1">
-                    <Label>예매처</Label>
-                    <Select
-                      id="ticketProvider"
-                      value={saleUrl.ticketProvider}
-                      onChange={(e) => {
-                        const newProvider = e.target.value as TicketProvider;
-                        setForm((prev) => ({
-                          ...prev,
-                          ticketSaleUrls: prev.ticketSaleUrls.map((url, i) =>
-                            i === urlIndex
-                              ? {
-                                  ...url,
-                                  ticketProvider: newProvider,
-                                }
-                              : url,
-                          ),
-                        }));
-                      }}
-                    >
-                      {Object.entries(PROVIDER_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div className="min-w-[200px] flex-[2]">
-                    <Label>URL</Label>
-                    <TextInput
-                      value={saleUrl.url}
-                      onChange={(e) =>
-                        updateSaleUrl(urlIndex, "url", e.target.value)
-                      }
-                      required
-                    />
-                  </div>
-                  {form.ticketSaleUrls.length > 1 && (
-                    <Button
-                      size="xs"
-                      color="failure"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          ticketSaleUrls: prev.ticketSaleUrls.filter(
-                            (_, i) => i !== urlIndex,
-                          ),
-                        }))
-                      }
-                    >
-                      <HiMinus className="h-4 w-4" />
-                    </Button>
-                  )}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="space-y-6">
+              <section className="space-y-4 rounded-lg bg-white p-6 shadow">
+                <h2 className="text-lg font-semibold">기본 정보</h2>
+                <div>
+                  <Label htmlFor="genre">장르</Label>
+                  <Select
+                    id="genre"
+                    value={form.genre}
+                    disabled={isEdit}
+                    onChange={(e) => {
+                      const newGenre = e.target.value as Genre;
+                      setForm({
+                        ...emptyForm(newGenre, !isEdit),
+                        genre: newGenre,
+                      });
+                    }}
+                  >
+                    {Object.entries(GENRE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
 
-                <div className="space-y-1 pl-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">
-                      판매 일정
-                    </span>
-                    <Button
-                      size="xs"
-                      color="light"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          ticketSaleUrls: prev.ticketSaleUrls.map((url, i) =>
-                            i === urlIndex
-                              ? {
-                                  ...url,
-                                  ticketSaleSchedules: [
-                                    ...url.ticketSaleSchedules,
-                                    emptySaleSchedule(),
-                                  ],
-                                }
-                              : url,
-                          ),
-                        }))
-                      }
-                    >
-                      <HiPlus className="mr-1 h-3 w-3" />
-                      일정 추가
-                    </Button>
-                  </div>
+                <div>
+                  <Label htmlFor="title">공연명</Label>
+                  <TextInput
+                    id="title"
+                    value={form.title}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
 
-                  <div className="grid grid-cols-[minmax(100px,1fr)_minmax(140px,1fr)_minmax(100px,1fr)_32px] gap-2 text-xs text-gray-500">
-                    <span>유형</span>
-                    <span>날짜</span>
-                    <span>시간</span>
-                    <span />
-                  </div>
+                <div>
+                  <Label htmlFor="imageUrl">티켓 이미지 URL</Label>
+                  <TextInput
+                    id="imageUrl"
+                    value={form.imageUrl}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, imageUrl: e.target.value }))
+                    }
+                    required
+                  />
+                </div>
 
-                  {saleUrl.ticketSaleSchedules.map(
-                    (schedule, scheduleIndex) => (
-                      <div
-                        key={scheduleIndex}
-                        className="grid grid-cols-[minmax(100px,1fr)_minmax(140px,1fr)_minmax(100px,1fr)_32px] items-center gap-2"
-                      >
-                        <TextInput
-                          value={schedule.type}
-                          onChange={(e) =>
-                            updateSaleSchedule(
-                              urlIndex,
-                              scheduleIndex,
-                              "type",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="선예매, 일반예매"
-                          required
-                        />
-                        <TextInput
-                          type="date"
-                          value={schedule.day}
-                          onChange={(e) =>
-                            updateSaleSchedule(
-                              urlIndex,
-                              scheduleIndex,
-                              "day",
-                              e.target.value,
-                            )
-                          }
-                          required
-                        />
-                        <TextInput
-                          type="time"
-                          value={schedule.time}
-                          onChange={(e) =>
-                            updateSaleSchedule(
-                              urlIndex,
-                              scheduleIndex,
-                              "time",
-                              e.target.value,
-                            )
-                          }
-                          required
-                        />
-                        {saleUrl.ticketSaleSchedules.length > 1 ? (
-                          <RemoveRowButton
-                            onClick={() =>
-                              setForm((prev) => ({
-                                ...prev,
-                                ticketSaleUrls: prev.ticketSaleUrls.map(
-                                  (url, i) =>
-                                    i === urlIndex
-                                      ? {
-                                          ...url,
-                                          ticketSaleSchedules:
-                                            url.ticketSaleSchedules.filter(
-                                              (_, j) => j !== scheduleIndex,
-                                            ),
-                                        }
-                                      : url,
-                                ),
-                              }))
-                            }
-                          />
-                        ) : (
-                          <span />
-                        )}
+                <PlaceSearchField
+                  value={form.place}
+                  suggestedQuery={suggestedPlaceQuery}
+                  onSelect={(placeName) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      place: placeName || null,
+                    }))
+                  }
+                />
+              </section>
+
+              <section className="rounded-lg bg-white p-6 shadow">
+                <ArrayFieldHeader
+                  label="예매 정보"
+                  onAdd={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      ticketSaleUrls: [...prev.ticketSaleUrls, emptySaleUrl()],
+                    }))
+                  }
+                />
+
+                {form.ticketSaleUrls.map((saleUrl, urlIndex) => (
+                  <div key={urlIndex} className="space-y-3 rounded p-4">
+                    <div className="flex flex-wrap gap-3">
+                      <div className="min-w-[140px] flex-1">
+                        <Label>예매처</Label>
+                        <Select
+                          id="ticketProvider"
+                          value={saleUrl.ticketProvider}
+                          onChange={(e) => {
+                            const newProvider = e.target
+                              .value as TicketProvider;
+                            setForm((prev) => ({
+                              ...prev,
+                              ticketSaleUrls: prev.ticketSaleUrls.map(
+                                (url, i) =>
+                                  i === urlIndex
+                                    ? {
+                                        ...url,
+                                        ticketProvider: newProvider,
+                                      }
+                                    : url,
+                              ),
+                            }));
+                          }}
+                        >
+                          {Object.entries(PROVIDER_LABELS).map(
+                            ([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ),
+                          )}
+                        </Select>
                       </div>
-                    ),
-                  )}
-                </div>
-              </div>
-            ))}
-          </section>
+                      <div className="min-w-[200px] flex-[2]">
+                        <Label>URL</Label>
+                        <TextInput
+                          value={saleUrl.url}
+                          onChange={(e) =>
+                            updateSaleUrl(urlIndex, "url", e.target.value)
+                          }
+                          required
+                        />
+                      </div>
+                      {form.ticketSaleUrls.length > 1 && (
+                        <Button
+                          size="xs"
+                          color="failure"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              ticketSaleUrls: prev.ticketSaleUrls.filter(
+                                (_, i) => i !== urlIndex,
+                              ),
+                            }))
+                          }
+                        >
+                          <HiMinus className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
 
-          <section className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <ArrayFieldHeader
-              label="공연 일시"
-              onAdd={() =>
-                setForm((prev) => ({
-                  ...prev,
-                  ticketEventSchedule: [
-                    ...prev.ticketEventSchedule,
-                    emptyEventSchedule(),
-                  ],
-                }))
-              }
-            />
+                    <div className="space-y-1 pl-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">
+                          판매 일정
+                        </span>
+                        <Button
+                          size="xs"
+                          color="light"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              ticketSaleUrls: prev.ticketSaleUrls.map(
+                                (url, i) =>
+                                  i === urlIndex
+                                    ? {
+                                        ...url,
+                                        ticketSaleSchedules: [
+                                          ...url.ticketSaleSchedules,
+                                          emptySaleSchedule(),
+                                        ],
+                                      }
+                                    : url,
+                              ),
+                            }))
+                          }
+                        >
+                          <HiPlus className="mr-1 h-3 w-3" />
+                          일정 추가
+                        </Button>
+                      </div>
 
-            <div className="space-y-1">
-              <div className="grid grid-cols-[minmax(160px,1fr)_minmax(120px,1fr)_32px] gap-3 text-gray-500">
-                <Label>날짜</Label>
-                <Label>시간</Label>
-              </div>
+                      <div className="grid grid-cols-[minmax(100px,1fr)_minmax(140px,1fr)_minmax(100px,1fr)_32px] gap-2 text-xs text-gray-500">
+                        <span>유형</span>
+                        <span>날짜</span>
+                        <span>시간</span>
+                        <span />
+                      </div>
 
-              {form.ticketEventSchedule.map((schedule, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-[minmax(160px,1fr)_minmax(120px,1fr)_32px] items-center gap-2"
-                >
-                  <TextInput
-                    type="date"
-                    value={schedule.day}
-                    onChange={(e) =>
-                      updateEventSchedule(index, "day", e.target.value)
-                    }
-                    required
-                  />
-                  <TextInput
-                    type="time"
-                    value={schedule.time}
-                    onChange={(e) =>
-                      updateEventSchedule(index, "time", e.target.value)
-                    }
-                    required
-                  />
-                  {form.ticketEventSchedule.length > 1 ? (
-                    <RemoveRowButton
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          ticketEventSchedule: prev.ticketEventSchedule.filter(
-                            (_, i) => i !== index,
-                          ),
-                        }))
-                      }
-                    />
-                  ) : (
-                    <span />
-                  )}
-                </div>
-              ))}
+                      {saleUrl.ticketSaleSchedules.map(
+                        (schedule, scheduleIndex) => (
+                          <div
+                            key={scheduleIndex}
+                            className="grid grid-cols-[minmax(100px,1fr)_minmax(140px,1fr)_minmax(100px,1fr)_32px] items-center gap-2"
+                          >
+                            <TextInput
+                              value={schedule.type}
+                              onChange={(e) =>
+                                updateSaleSchedule(
+                                  urlIndex,
+                                  scheduleIndex,
+                                  "type",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder="선예매, 일반예매"
+                              required
+                            />
+                            <TextInput
+                              type="date"
+                              value={schedule.day}
+                              onChange={(e) =>
+                                updateSaleSchedule(
+                                  urlIndex,
+                                  scheduleIndex,
+                                  "day",
+                                  e.target.value,
+                                )
+                              }
+                              required
+                            />
+                            <TextInput
+                              type="time"
+                              value={schedule.time}
+                              onChange={(e) =>
+                                updateSaleSchedule(
+                                  urlIndex,
+                                  scheduleIndex,
+                                  "time",
+                                  e.target.value,
+                                )
+                              }
+                              required
+                            />
+                            {saleUrl.ticketSaleSchedules.length > 1 ? (
+                              <RemoveRowButton
+                                onClick={() =>
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    ticketSaleUrls: prev.ticketSaleUrls.map(
+                                      (url, i) =>
+                                        i === urlIndex
+                                          ? {
+                                              ...url,
+                                              ticketSaleSchedules:
+                                                url.ticketSaleSchedules.filter(
+                                                  (_, j) => j !== scheduleIndex,
+                                                ),
+                                            }
+                                          : url,
+                                    ),
+                                  }))
+                                }
+                              />
+                            ) : (
+                              <span />
+                            )}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </section>
             </div>
-          </section>
+            <div className="space-y-6">
+              <section className="space-y-4 rounded-lg bg-white p-6 shadow">
+                <ArrayFieldHeader
+                  label="공연 일시"
+                  onAdd={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      ticketEventSchedule: [
+                        ...prev.ticketEventSchedule,
+                        emptyEventSchedule(),
+                      ],
+                    }))
+                  }
+                />
 
-          <section className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <ArrayFieldHeader
-              label="티켓 가격"
-              onAdd={() =>
-                setForm((prev) => ({
-                  ...prev,
-                  price: [...prev.price, emptyPrice()],
-                }))
-              }
-            />
+                <div className="space-y-1">
+                  <div className="grid grid-cols-[minmax(160px,1fr)_minmax(120px,1fr)_32px] gap-3 text-gray-500">
+                    <Label>날짜</Label>
+                    <Label>시간</Label>
+                  </div>
 
-            <div className="space-y-1">
-              <div className="grid grid-cols-[minmax(140px,1fr)_minmax(140px,1fr)_32px] gap-2 text-xs text-gray-500">
-                <Label>좌석 유형</Label>
-                <Label>가격</Label>
-              </div>
-
-              {form.price.map((priceItem, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-[minmax(140px,1fr)_minmax(140px,1fr)_32px] items-center gap-2"
-                >
-                  <TextInput
-                    value={priceItem.type}
-                    onChange={(e) => updatePrice(index, "type", e.target.value)}
-                    placeholder="전석, VIP"
-                    required
-                  />
-                  <TextInput
-                    value={priceItem.price}
-                    onChange={(e) =>
-                      updatePrice(index, "price", e.target.value)
-                    }
-                    placeholder="154,000원"
-                    required
-                  />
-                  {form.price.length > 1 ? (
-                    <RemoveRowButton
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          price: prev.price.filter((_, i) => i !== index),
-                        }))
-                      }
-                    />
-                  ) : (
-                    <span />
-                  )}
+                  {form.ticketEventSchedule.map((schedule, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-[minmax(160px,1fr)_minmax(120px,1fr)_32px] items-center gap-2"
+                    >
+                      <TextInput
+                        type="date"
+                        value={schedule.day}
+                        onChange={(e) =>
+                          updateEventSchedule(index, "day", e.target.value)
+                        }
+                        required
+                      />
+                      <TextInput
+                        type="time"
+                        value={schedule.time}
+                        onChange={(e) =>
+                          updateEventSchedule(index, "time", e.target.value)
+                        }
+                        required
+                      />
+                      {form.ticketEventSchedule.length > 1 ? (
+                        <RemoveRowButton
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              ticketEventSchedule:
+                                prev.ticketEventSchedule.filter(
+                                  (_, i) => i !== index,
+                                ),
+                            }))
+                          }
+                        />
+                      ) : (
+                        <span />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </section>
+
+              <section className="space-y-4 rounded-lg bg-white p-6 shadow">
+                <ArrayFieldHeader
+                  label="티켓 가격"
+                  onAdd={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      price: [...prev.price, emptyPrice()],
+                    }))
+                  }
+                />
+
+                <div className="space-y-1">
+                  <div className="grid grid-cols-[minmax(140px,1fr)_minmax(140px,1fr)_32px] gap-2 text-xs text-gray-500">
+                    <Label>좌석 유형</Label>
+                    <Label>가격</Label>
+                  </div>
+
+                  {form.price.map((priceItem, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-[minmax(140px,1fr)_minmax(140px,1fr)_32px] items-center gap-2"
+                    >
+                      <TextInput
+                        value={priceItem.type}
+                        onChange={(e) =>
+                          updatePrice(index, "type", e.target.value)
+                        }
+                        placeholder="전석, VIP"
+                        required
+                      />
+                      <TextInput
+                        value={priceItem.price}
+                        onChange={(e) =>
+                          updatePrice(index, "price", e.target.value)
+                        }
+                        placeholder="154,000원"
+                        required
+                      />
+                      {form.price.length > 1 ? (
+                        <RemoveRowButton
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              price: prev.price.filter((_, i) => i !== index),
+                            }))
+                          }
+                        />
+                      ) : (
+                        <span />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="space-y-4 rounded-lg bg-white p-6 shadow">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  아티스트
+                </h3>
+
+                <ArtistSearchField
+                  artists={form.artists}
+                  isMusical={isMusical}
+                  onAdd={addArtistFromSearch}
+                  onUpdate={updateArtistFromSearch}
+                  onRemove={removeArtist}
+                />
+              </section>
+
+              <div className="flex gap-3">
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? "저장 중..." : isEdit ? "수정" : "생성"}
+                </Button>
+                <Button
+                  type="button"
+                  color="light"
+                  onClick={() => navigate("/")}
+                >
+                  취소
+                </Button>
+              </div>
             </div>
-          </section>
-
-          <section className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <h3 className="text-lg font-semibold text-gray-900">아티스트</h3>
-
-            <ArtistSearchField
-              artists={form.artists}
-              isMusical={isMusical}
-              onAdd={addArtistFromSearch}
-              onUpdate={updateArtistFromSearch}
-              onRemove={removeArtist}
-            />
-          </section>
-
-          <div className="flex gap-3">
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "저장 중..." : isEdit ? "수정" : "생성"}
-            </Button>
-            <Button type="button" color="light" onClick={() => navigate("/")}>
-              취소
-            </Button>
           </div>
         </form>
       </main>

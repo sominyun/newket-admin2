@@ -17,6 +17,10 @@ export function getTicket(ticketId: number) {
   return apiGet<CreateTicketRequest>(`/ticket/${ticketId}`);
 }
 
+export function getMusicalTicket(ticketId: number) {
+  return apiGet<CreateMusicalRequest>(`/ticket/musical/${ticketId}`)
+}
+
 export function createTicket(request: CreateTicketRequest) {
   return apiPost<Ticket>("/ticket", request);
 }
