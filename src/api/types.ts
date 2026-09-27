@@ -97,6 +97,12 @@ export interface ArtistTableDto {
   imageUrl: string | null;
 }
 
+export interface ArtistCrawlDto {
+  name: string;
+  subName: string;
+  imageUrl: string;
+}
+
 export type EditableArtistRow = Omit<ArtistTableDto, "artistId"> & {
   artistId: number | null;
 };

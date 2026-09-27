@@ -1,6 +1,7 @@
 import { Alert, Button, Spinner, TextInput } from "flowbite-react";
 import {
   type Dispatch,
+  type ReactNode,
   type SetStateAction,
   useMemo,
   useRef,
@@ -35,6 +36,7 @@ type EditableGridTableProps<T> = {
   saving?: boolean;
   error?: string | null;
   onDismissError?: () => void;
+  toolbarExtra?: ReactNode;
 };
 
 export function EditableGridTable<T>({
@@ -48,6 +50,7 @@ export function EditableGridTable<T>({
   saving = false,
   error = null,
   onDismissError,
+  toolbarExtra,
 }: EditableGridTableProps<T>) {
   const [searchText, setSearchText] = useState("");
   const gridRef = useRef<AgGridReact<T>>(null);
@@ -125,20 +128,23 @@ export function EditableGridTable<T>({
         </Alert>
       )}
 
-      <div className="flex gap-3">
-        <TextInput
-          className="min-w-[200px] flex-1"
-          icon={HiOutlineSearch}
-          placeholder="검색어를 입력하세요"
-          value={searchText}
-          onChange={(e) => setSearchText(e.currentTarget.value)}
-        />
-        <Button color="light" onClick={addRow}>
-          {addButtonLabel}
-        </Button>
-        <Button color="blue" onClick={saveRows} disabled={saving}>
-          {saving ? "저장 중..." : "저장"}
-        </Button>
+      <div className="space-y-3">
+        <div className="flex gap-3">
+          <TextInput
+            className="min-w-[200px] flex-1"
+            icon={HiOutlineSearch}
+            placeholder="검색어를 입력하세요"
+            value={searchText}
+            onChange={(e) => setSearchText(e.currentTarget.value)}
+          />
+          <Button color="light" onClick={addRow}>
+            {addButtonLabel}
+          </Button>
+          <Button color="blue" onClick={saveRows} disabled={saving}>
+            {saving ? "저장 중..." : "저장"}
+          </Button>
+        </div>
+        {toolbarExtra}
       </div>
 
       <div

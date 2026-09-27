@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ColDef } from "ag-grid-community";
+import { Button, TextInput } from "flowbite-react";
+import { HiOutlineGlobeAlt } from "react-icons/hi";
 
 import {
   createPlaceholderRenderer,
   EditableGridTable,
 } from "../common/EditableGridTable.tsx";
-import { getAllArtists, saveArtists } from "../../src/api/artistApi.ts";
+import {
+  crawlArtist,
+  getAllArtists,
+  saveArtists,
+} from "../../src/api/artistApi.ts";
 import type { ArtistTableDto, EditableArtistRow } from "../../src/api/types.ts";
 
 function toArtistTableDto(row: EditableArtistRow): ArtistTableDto {
@@ -31,6 +37,8 @@ function toEditableArtistRow(row: ArtistTableDto): EditableArtistRow {
 export function ArtistListTable() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [crawling, setCrawling] = useState(false);
+  const [crawlQuery, setCrawlQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [artists, setArtists] = useState<EditableArtistRow[]>([]);
 
@@ -89,6 +97,50 @@ export function ArtistListTable() {
     loadArtists();
   }, [loadArtists]);
 
+  const handleCrawl = async () => {
+    const query = crawlQuery.trim();
+
+    if (!query) {
+      setError("크롤링할 아티스트명을 입력하세요.");
+      return;
+    }
+
+    setCrawling(true);
+    setError(null);
+
+    try {
+      const crawled = await crawlArtist(query);
+      const name = crawled.name?.trim() ?? "";
+      const subName = crawled.subName?.trim() ?? "";
+      const imageUrl = crawled.imageUrl?.trim() ?? "";
+
+      if (!name && !subName && !imageUrl) {
+        setError(`"${query}" 로 검색된 아티스트가 없습니다.`);
+        return;
+      }
+
+      setArtists((prev) => [
+        {
+          artistId: null,
+          name,
+          subName,
+          nickname: "",
+          imageUrl,
+        },
+        ...prev,
+      ]);
+      setCrawlQuery("");
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "아티스트 크롤링에 실패했습니다.",
+      );
+    } finally {
+      setCrawling(false);
+    }
+  };
+
   const handleSave = async (rows: EditableArtistRow[]) => {
     setSaving(true);
     setError(null);
@@ -125,6 +177,27 @@ export function ArtistListTable() {
       saving={saving}
       error={error}
       onDismissError={() => setError(null)}
+      toolbarExtra={
+        <form
+          className="flex items-center gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleCrawl();
+          }}
+        >
+          <TextInput
+            className="flex-1"
+            icon={HiOutlineGlobeAlt}
+            placeholder="추가할 아티스트명을 입력하세요."
+            value={crawlQuery}
+            onChange={(e) => setCrawlQuery(e.currentTarget.value)}
+            disabled={crawling}
+          />
+          <Button type="submit" color="alternative" disabled={crawling}>
+            {crawling ? "크롤링 중..." : "크롤링으로 가져오기"}
+          </Button>
+        </form>
+      }
     />
   );
 }
