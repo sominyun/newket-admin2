@@ -12,6 +12,7 @@
     "format:check": "prettier . --check"
   },
   "dependencies": {
+    "@vercel/config": "^0.7.2",
     "ag-grid-community": "^36.0.2",
     "ag-grid-react": "^36.0.2",
     "flowbite-react": "^0.12.4",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@eslint/js": "^9.31.0",
     "@tailwindcss/vite": "^4.1.11",
+    "@types/node": "^26.6.3",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.7.0",
