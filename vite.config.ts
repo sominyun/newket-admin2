@@ -4,18 +4,14 @@ import { defineConfig, loadEnv } from "vite";
 import flowbiteReact from "flowbite-react/plugin/vite";
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, ".", "VITE_");
+  const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    plugins: [
-      react(),
-      tailwindcss(),
-      flowbiteReact(),
-    ],
+    plugins: [react(), tailwindcss(), flowbiteReact()],
     server: {
       proxy: {
         "/api": {
-          target: env.VITE_API_BASE_URL,
+          target: env.BACKEND_URL,
           changeOrigin: true,
         },
       },
