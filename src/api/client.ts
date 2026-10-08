@@ -26,8 +26,16 @@ async function handleResponse<T>(response: Response): Promise<T> {
     return undefined as T;
   }
 
-  return JSON.parse(text) as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as T;
+  }
 }
+
+const credentialsInit: RequestInit = {
+  credentials: "include",
+};
 
 export async function apiGet<T>(
   path: string,
@@ -43,21 +51,24 @@ export async function apiGet<T>(
     });
   }
 
-  const response = await fetch(url.toString());
+  const response = await fetch(url.toString(), credentialsInit);
   return handleResponse<T>(response);
 }
 
-export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...credentialsInit,
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    headers:
+      body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
   return handleResponse<T>(response);
 }
 
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...credentialsInit,
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -67,6 +78,7 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
 
 export async function apiDelete(path: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...credentialsInit,
     method: "DELETE",
   });
   return handleResponse<void>(response);

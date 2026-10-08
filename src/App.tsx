@@ -3,9 +3,11 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Artist from "../pages/Artist.tsx";
 import Place from "../pages/Place.tsx";
+import { AuthProvider } from "./auth/AuthContext";
 
 const Home = lazy(() => import("../pages/Home"));
 const TicketForm = lazy(() => import("../pages/TicketForm"));
+const Login = lazy(() => import("../pages/Login"));
 
 function Loading() {
   return (
@@ -19,48 +21,58 @@ function Loading() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Suspense fallback={<Loading />}>
-              <Home />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/ticket/new"
-          element={
-            <Suspense fallback={<Loading />}>
-              <TicketForm />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/ticket/:ticketId/edit"
-          element={
-            <Suspense fallback={<Loading />}>
-              <TicketForm />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/artist"
-          element={
-            <Suspense fallback={<Loading />}>
-              <Artist />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/place"
-          element={
-            <Suspense fallback={<Loading />}>
-              <Place />
-            </Suspense>
-          }
-        />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<Loading />}>
+                <Login />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/"
+            element={
+              <Suspense fallback={<Loading />}>
+                <Home />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/ticket/new"
+            element={
+              <Suspense fallback={<Loading />}>
+                <TicketForm />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/ticket/:ticketId/edit"
+            element={
+              <Suspense fallback={<Loading />}>
+                <TicketForm />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/artist"
+            element={
+              <Suspense fallback={<Loading />}>
+                <Artist />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/place"
+            element={
+              <Suspense fallback={<Loading />}>
+                <Place />
+              </Suspense>
+            }
+          />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
