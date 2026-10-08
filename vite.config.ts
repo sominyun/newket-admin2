@@ -10,9 +10,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss(), flowbiteReact()],
     server: {
       proxy: {
-        "/api": {
+        "/api/v1/admins": {
           target: env.BACKEND_URL,
           changeOrigin: true,
+          cookieDomainRewrite: "",
         },
       },
     },
