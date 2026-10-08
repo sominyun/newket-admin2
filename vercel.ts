@@ -8,7 +8,7 @@ if (!BACKEND_URL) {
 
 export const config: VercelConfig = {
   rewrites: [
-    routes.rewrite("/api/:path*", `${BACKEND_URL}/api/:path*`),
+    routes.rewrite("/api/v1/admins/:path*", `${BACKEND_URL}/api/v1/admins/:path*`),
 
     routes.rewrite("/(.*)", "/index.html"),
   ],
