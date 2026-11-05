@@ -12,6 +12,7 @@
     "format:check": "prettier . --check"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "@vercel/config": "^0.7.2",
     "ag-grid-community": "^36.0.2",
     "ag-grid-react": "^36.0.2",
