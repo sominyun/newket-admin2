@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { Spinner } from "flowbite-react";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -73,6 +74,7 @@ export default function App() {
           />
         </Routes>
       </AuthProvider>
+      <Analytics />
     </BrowserRouter>
   );
 }
